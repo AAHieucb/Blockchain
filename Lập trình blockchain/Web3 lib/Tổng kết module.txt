@@ -1,0 +1,172 @@
+Web3:
+Web dùng cho cả frontend và backend, mặc định xét backend.
+
+
+
+# Frontend web3
+=> refer tới "React"
+
+
+
+# Basic
+Lib web3 ta cần hiểu cách: tạo instance web3 từ provider, gọi các hàm lấy thông tin chung, dùng các hàm util giúp thao tác với dữ liệu, ký message, gọi getter function, thực hiện trans, tương tác với event
+
+-> eth: lấy thông tin về blockchain, tài khoản
+--> eth.net: lấy thông tin về network, khởi tạo contract
+
+-> Dùng utils: dùng BN, mã hóa, thao tác với address, bytes32 và string
+
+-> Setup:
+NodeJS, React ez rồi
+Với HTML thuần:
+script unpkg.com/web3@1.2.4/dist/web3.min.js trong file html luôn
+
+unpkg là dự án giúp dùng tất cả các public npm package như CDN cho dự án mà k cần install npm package
+unpkg.com/:package@:version/:file
+VD: unpkg.com/web3@1.2.4/dist/web3.min.js => có thể script nó trong file html luôn
+
+
+
+# Dùng JSON-RPC thuần
+Smart contract <-> Ethereum API <-> UI
+Chi tiết: Web3 <-- json rpc --> Web3 Provider -> Ethereum Blockchain
+Trong web bình thường ta dùng REST API nhưng blockchain sử dụng json-rpc protocol phức tạp hơn nhưng tốc độ nhanh hơn.
+
+VD: trong web app VD ta cần làm 1 action get hay edit 1 blog thì ta dùng route kiểu blogs/get/id1 or blogs/edit/id1/username gửi request đó tới server 1 là 1 endpoint để phản hồi
+Nhưng nếu thế thì trong blockchain sẽ có vô số endpoints vì số lượng smart contract là vô kể mà mỗi smart contract lại có 1 endpoint khác nhau vì mỗi smart contract lại có get và edit khác nhau. Tốc độ tạo ra smart contract rất nhanh thì chẳng lẽ mỗi lần SM tạo ra, ta lại phải bảo blockchain Ethereum thêm 1 route mới -> điều này là bất khả thi nên dev của ethereum dùng RPC protocol cho phép dev tạo ra bao nhiêu dynamically endpoint đều được. Nhưng dùng json protocol thuần sẽ rất phức tạp nên các thư viện như web3, ethers ra đời làm đơn giản hóa việc này.
+=> Smart contract <-> Web3 <-> UI
+
+Vc dùng web3 có đủ hết chức năng để tương tác với smart contract. Tuy nhiên Ethereum có json-rpc là Ethereum API giúp tương tác với blockchain. Dù nó phức tạp hơn web3 nhưng tốc độ nhanh hơn.
+
+-> RPC (remote procedure call) cũng chỉ là gọi procedure từ 1 máy khác không cùng tiến trình với máy thực thi procedure mà thôi. 
+VD A yêu cầu remote B thực thi 1 function -> B thực thi vì function implement trên B -> trả kết quả lại cho A dưới dạng message
+
+-> VD tạo 1 blockchain: ganache-cli --host 127.0.0.1 (--blockTime 2 --networkId 12345678)
+Có thể dùng remix tương tác với mạng trên bằng cách chuyển sang web3 provider và gõ vào rpc url http://127.0.0.1:8545
+chainId mặc định là 1337
+
+Lời gọi RPC sẽ có dạng: curl -X POST --data '{"jsonrpc":"2.0","method":"","params":[],"id":64}' http://127.0.0.1:8545
+=> Method là tên procedure muốn gọi VD: web3_clientVersion, web3_sha3,..; params là tham số trong request thực hiện các filter; id là giá trị hữu dụng khi dùng websocket nhận 1 luồng response có tác dụng mapping giữa các request và response, TH này dùng POST đơn giản thì k có tác dụng gì
+Các giá trị pass vào json thì phải convert sang HEX trước khi tạo request và prefix phải 0x
+=> Các method đều là các hàm ethereum api k liên quan đến web3, chú ý vài hàm web3 có cấu trúc giống làm ta tưởng ta đang code web3 nhưng không phải, thao tác với terminal gọi request kiểu này là ta đang thao tác trực tiếp với json-rpc
+
+VD: 
+=> Mở git bash lên nhập lệnh rpc vì 1 vài terminal có thể k hỗ trợ curl, dùng Powershell phải thử xem alias nó là gì:
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:8545  => lấy số block
+
+curl -X POST --data '{"jsonrpc":"2.0", "method": "eth_getStorageAt", "params": ["0xe396578C54988df0682b6DB65d1FD0Bfd0a498E2", "0x0", "latest"], "id": 1}' http://127.0.0.1:8545 => lấy giá trị lưu trong storage của contract, 1 là địa chỉ contract, 2 là vị trí slot muốn lấy
+
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"address": "0x1Afc3fdC7884c6a2064c2f39c60d62a7a042703A","fromBlock": "0x0","topics":[]}],"id":74}' http://127.0.0.1:8545 => lấy log event
+
+(paste trên gitbash dùng rightclick + paste)
+
+
+
+# Tạo instance web3 từ provider
+Web3 <-> Provider <-> Ethereum Node -> SmartContracts
+Nguyên nhân nó không dùng Web3 liên kết thẳng với Ethereum Node luôn là bởi vì nó muốn dùng Provider để tương thích với nhiều loại Wallet khác nhau
+Wallet --expose--> Provider <--used by-- DApp Web3
+=> Mỗi 1 thứ dùng trong DApp sẽ có 1 cách cung Provider khác nhau với vai trò khác nhau, chỉ cần nhét nó vào web3 của DApp để dùng thôi
+
+Có 3 loại provider là HttpProvider, Websocketprovider và IpcProvider. Trong object Web3.providers có cả 3 loại providers này.
+HttpProvider đã deprecated và k dùng được cho subscription, WebsocketProvider là bản standard trong legacy browser, IpcProvider thường dùng trong nodejs dapp khi chạy local node và nó sẽ có connection bảo mật tốt nhất.
+=> Mặc định dùng http provider với hầu hết các nhu cầu thông thường.
+
+Bản chất của provider:
+Nó cũng chỉ là 1 object có tối thiểu 1 hàm sendAsync, hàm này được gọi bất cứ khi nào web3 cần gọi đến 1 hàm tương tác với blockchain. Bên trong hàm này sẽ nhận payload của request và dùng payload đó gọi đến blockchain lấy dữ liệu rồi trả về qua hàm callback. Nó cũng chỉ tái tạo payload và gọi api y hệt như json-rpc thuần bên trên mà thôi.
+
+Provider phân biệt 2 loại: 
+Nếu provider gắn với 1 node cố định của 1 network, node này là node dùng chung không gắn với địa chỉ của ta, k gắn với ví của ta thì chỉ có thể gọi được các hàm getter như provider của infura hay các rpc url có sẵn. 
+Nếu provider gắn với tài khoản của ta VD được tạo ra từ metamask hay cung thẳng vào private key để tạo thì instance web3 đi kèm có thể dùng để thực hiện transaction or ký message.
+=> Kiểu gì thì provider cũng chỉ là 1 cách giúp instance web3 của ứng dụng liên kết với 1 ethereum node.
+
+Phân biệt: 
+Infura node có tác dụng gửi request lên blockchain pubnet. Khi dùng hdwallet-provider với pivkey truyền vào thì ký trans là web3 xử lý, vẫn phải dùng provider kiểu này để gửi lên mạng.
+Ví metamask có tác dụng giúp pop up cho người dùng ký trans, đồng thời gửi lên pubnet.
+Khi dùng url ganache làm provider, nó coi là thực hiện luôn chứ éo phải ký r gửi như v.
+
+-> Tạo instance gắn với 1 tk bằng private key
+--> Dùng package @truffle/hdwallet-provider: giúp tạo ra 1 provider dễ hơn tương tác trên public net với đầu vào là tài khoản(pub/pib key) trên các cái public net đó. hdwallet-provider chỉ để tạo provider tiện hơn, ta có thể dùng nó cho ganache thoải mái. Chính vì vậy cái này thường dùng ở backend, còn front end họ dùng provider của wallet software trên browser cơ
+
+---> Kết hợp ganache: bởi vì ganache là mạng test for development nên nó cấu hình đơn giản đi để dev có thể dùng nhanh nhất nên khi ta tạo provider chỉ bằng 1 url thì nó cũng tự unlock 10 accounts và mặc định dùng accounts đầu tiên để deployed contract và làm các thứ mà ta k cần phải thêm pivkey như trên. Nhưng trên public net k có 10 accounts sẵn như thế nên ta phải dùng tk của ta, cung cả piv/pubkey vào để nhận được provider mà tương tác:
+web3 -> sign transaction by wallet(or by piv/pub key là 1 tk trên mạng public) -> send signed transaction to public net => tự động thực hiện bởi web3 khi provider nhận được có private key
+=> Ta có thể truyền hdwallet-provider pivkey của 1 trong 10 tk có sẵn của ganache. Khi đó tk có sẵn ethers nên tốt hơn
+
+--> Dùng web3 thuần 
+Với web3.eth.accounts.wallet.add, khi dùng hdwallet provider, nó tự set cho ta gas và gasPrice mặc định đầy đủ trong biến web3 nên thực hiện trans rất mượt. Khi dùng web3 thuần, mỗi khi thực hiện trans, ta phải set gas và gasPrice đủ lượng để thực hiện transaction đó
+
+
+
+# Tương tác với contract
+Web3 instance --address+ABI--> contract instance --interact-> smart contract
+ABI là các function của contract mà web3 có thể gọi, ta có thể có 1 object ABI k đầy đủ mà chỉ cần có các function cần gọi thôi
+Để test được thì phải có 1 dự án thực tế có abi và address riêng của smart contract deploy lên 1 blockchain chỉ định
+
+-> Liên kết contract
+Khi có instance web3 gắn vói mạng, để tương tác với contract cần abi và address của contract trong mạng đó
+
+Trường address của instance truyền vào là optional params vì nhiều lúc người ta tạo contract instance chung chỉ cần abi mà k cần trỏ đến 1 contract ở 1 address cụ thể nào cả, sau đó mới deploy contract instance lên bằng web3 dù kiểu này ít dùng
+
+-> Call function
+
+-> Send transaction
+--> Dùng hàm send
+Ở frontend k cần truyền gasPrice và gas vì kiểu gì user cũng override lên với setup trong ví của họ
+
+Có 4 cách xử lý trans async: 
+async await, .then().catch(), callback để thực hiện trans
+Dùng event emitter để xử lý trạng thái trans vì hàm send trả về 1 event emitter  => thg dùng phía frontend
+=> refer tới "## React / React lập trình web3 # Pattern xử lý trạng thái transaction"
+
+--> Send tx qua chữ ký
+
+---> Tương tác với payable smart contract
+
+--> Deploy contract
+
+-> Gửi ether
+--> Dùng sendTransaction: chỉ gọi vào fallback của transaction để gửi ethers or gửi trực tiếp vào tk nào cũng được
+
+
+
+# Tương tác với event
+-> Lấy event cụ thể
+
+-> Subscribe to event
+Để subscribe to event, ta buộc dùng WebsocketProvider.
+
+=> ref tới "Solidity / Solidity Other / Dùng web3"
+
+
+
+#***Cơ chế bảo mật xem data bằng sign message(pro)
+=> refer tới "Projects / Leaderboard trava / Leaderboard HighChart"
+
+Hacker có thể gán các giá trị cho redux và localStorage thoải mái, nó có thể gửi được mọi API và code frontend coi như là luôn công khai. Nhưng hacker k thể biết được code bên server cũng như k có private key của người khác để tiến hành ký, k biết signature.
+
+-> User phải sign message xác nhận được quyền xem data của chính họ
+Thực tế ta luôn yêu cầu 1 người connect ví của họ với trang web để thao tác với trang web nhưng k muốn cứ connect là được xem data đó mà họ phải ký thêm 1 bước nữa xác nhận mới được quyền. Là vì connect vào website cũng chỉ là biết địa chỉ, hacker có thể đổi redux thành địa chỉ của người khác để xem data của họ. Ký bằng khóa riêng là cách duy nhất để xác định đúng 1 người đang request.
+
+- Basic: Đơn giản ta dùng personal sign là được, tức người dùng pop up ký 1 string kiểu "Cho phép xem data" và nhận về 1 signature, server dùng pubkey xác thực đúng là address này ký cái message "Cho phép xem data" thành cái signature này thì trả lại data của address đó.
+Nếu ta muốn họ kp ký lại nhiều lần thì chỉ cần nhét sig vào localStorage là được, mỗi lần vào thì check localStorage trước và disconnect phải xóa localStorage đi.
+
+- Advance: Local storage có thể lộ. Do đó mỗi lần ký cần ra 1 signature khác nhau thì signature cũ k còn khả dụng nữa, đồng thời 1 signature dù lưu vào trong localStorage cũng chỉ cho phép trong 1 khoảng thời gian, nếu quá sẽ phải ký lại => Chỉ dùng khi thông tin quan trọng
+
+Buộc server phải lưu thông tin login người dùng để làm được điều này. Giả sử hacker có thể hack signature, nhưng k thể chủ động ký. 
+=> Best practice: Đầu tiên user vào app sẽ connect tài khoản sẽ query nonce từ server, server lưu cặp <userAddress,nonce> với nonce tăng dần từ 0 -> FE ký message với nonce đó gửi cho server -> Server nhận sig và tăng nonce+1 luôn để sig này k dùng lại, sinh accesstoken và refreshtoken mới gửi cho FE -> 2 token này có expires time và lưu thông tin về nonce -> FE dùng 2 token này để query -> server check token có đúng nonce và đúng user thì ok -> disconnect thì xóa token và lặp lại quy trình lấy nonce mới từ server
+
+Sau 1 ktg, token sẽ hết hạn. Nếu user ký lần nữa sẽ có nonce mới cũng làm token hết hạn
+Signature k thể tái sử dụng và được dùng 1 lần duy nhất gửi tới server
+=> An toàn tuyệt đối, hack sig hay token k có ý nghĩa gì. Thậm chí có thể làm serverless
+
+
+
+#***Cơ chế bảo mật data contract bằng password và sign(pro)
+=> refer tới "Projects / Battle Hand"
+Việc connect ví vào web có thể bị hack do hacker có thể đổi data ở FE, vì ta fetch data về thực chất là theo address trong redux chứ k phải xác thực gì cả. Cách duy nhất để chứng minh đúng là 1 người là phải sign message.
+
+Có 2 người chơi kéo búa bao. Người 1 tạo room, chọn kéo búa bao, gõ password, chọn khoản cược. Người 2 xem list phòng đang mở mà chưa có ai chơi thì vào đấu luôn, thắng được tiền, thua mất tiền cược. Cần bảo mật đúng là người đó, thông tin các ô không bị lộ kể cả đội dev.
+
+=> Người 1 vào create room chọn các ô, gõ password, chọn khoản cược rồi ấn create -> FE mã hóa các ô với password -> Gửi đoạn mã hóa lên contract -> Người dùng phải nhập password để xem -> Người 2 vào đấu -> Người 1 reveal
+
+
