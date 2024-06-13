@@ -1,0 +1,356 @@
+Move
+Move gốc được tạo bởi Diem. Aptos cũng dùng Move để viết SM nhưng aptos chỉ là framework thôi. Cũng như nodejs là framework của JS v
+
+
+
+# Basic
+-> Setup move thuần của Diem:
+Có move-analyzer extension hỗ trợ code move.
+
+Để compile move cần tool move-cli. Nó giống như khi cài hardhat --global là dùng được build, test, run, publish với file config xác định.
+
+Tut chuẩn: https://www.youtube.com/watch?v=jeaEPNxSun0&list=PLCehwWkztHkJxLLleH1OXojVgldJ4OXoC => tất cả các docs chuẩn khác đều gặp vấn đề
+Doc ngôn ngữ chuẩn (k tính phần cài đặt lỗi): https://diem.github.io/move/modules-and-scripts.html
+
+Cài move-cli rất rối. Thậm chí docs còn hướng dẫn lệnh sai éo thèm update. Có 2 bản cài là diem/git.com hiển thị "move-cli 0.1.0" và move-language/move.git hiển thị "Move 0.1.0 CLI frontend for Move compiler and VM" (Phải cài cargo trước)
+Doc bản 1: https://github.com/diem/move/tree/main/language/documentation/tutorial
+Doc bản 2: https://github.com/diem/move/tree/main/language/tools/move-cli
+=> Bản 2 cài éo chạy được, phải dùng bản 1
+
+*** Chạy command trong tutorial vẫn chưa chắc được, 1 trong 2 command sau là đúng (cài qua powershell):
+1) cargo install --git https://github.com/diem/diem move-cli
+Hoặc cargo install --git https://github.com/diem/move move-cli --branch main
+2) Cách 2 là giống trong docs:
+git clone https://github.com/diem/move.git -> ... -> cargo install --path language/tools/move-cli
+
+Hiện tại ta đang lưu bản move chạy được ở thư mục move. Để cài move từ nó chỉ cần:
+cargo install --path language/tools/move-cli
+
+*** Lệnh move trùng với lệnh move của microsoft powershell, phải mở git bash mới gọi được
+
+-> Run first move module => ref tới "Move Basic / firstpackage"
+- cd vào thư mục -> move new firstpackage => khởi tạo dự án mới là 1 package tên là "firstpackage"
+Nó sinh file config sẵn Move.toml (giống hardhat.config.js)
+- Code file move mới:
+Có 2 loại code là modules và script. Modules là code được 1 account published ra để chạy onchain, scripts giống như 1 contract có thể gọi các hàm của modules.
+Ta tạo 1 module mới gắn với 1 tk mà sẽ dùng publish module đó.
+Tạo struct, tạo hàm, tạo test cho hàm đó, khởi tạo biến struct, sử dụng module std in ra màn hình
+- Thêm các thư viện standard vào file config
+move build => để build
+move test => chạy hàm #[test] của mọi file.move trong thư mục
+Vì move support có thể viết unit test ngay trong file đó luôn với #[test]
+
+-> Nhiều phiên bản move khác không sử dụng file Move.toml mà dùng .mvconfig.json và nhiều thứ khác, nhưng về cú pháp code move đều là như nhau. Với các phiên bản khác đó, phải tải đúng compiler của nó và config file chuẩn
+
+-> Modules:
+Ta viết bao nhiêu modules cx được. Mỗi modules gắn với 1 tk và scripts chỉ truy cập được modules của tài khoản định nghĩa trong file config.
+Chạy ở local ta có thể set tk là gì cx được. Chạy trên public test phải set đúng tk của ta sẽ publish contract
+
+Dùng với use: use <publisher's address>::<module name>;
+
+-> Keyword:
+has drop: 1 struct có has drop tức biến struct đó có thể bị xóa. Mặc định thì 1 struct k có has drop sẽ k thể bị xóa. VD ta khởi tạo biến struct local bth trong hàm, đến cuối hàm kết thúc, nó sẽ tự bị xóa đi, để tự xóa được biến local như v thì struct cũng phải có has drop. Nch là cứ có biến local trong hàm là phải có has drop
+
+has store, key: store tức struct có khả năng lưu vào global storage on-chain wallet. key tức struct có thể dùng như 1 key cho global storage operation.  
+
+has copy: biến type này có khả năng copy value khi cần dùng. Mặc định là k có thì k thể copy value để truyền vào nhiều nơi mà value được lấy ra. Vd NFT hay các thứ khác thường set cho copy hay không.
+Khi gọi (copy x) thì bản thân biến x sau khi kết thúc hàm sẽ bị xóa nếu k truyền reference tới nơi nào khác nên struct cũng cần có has drop
+
+&mut Person: giả sử 1 params truyền vào hàm có type này thì nó là reference type Person mà có thể thay đổi (mutable). Mặc định bth truyền vào hàm là immutable sẽ k thể đổi giá trị biến reference
+
+assert! => nên set mỗi loại error 1 return error code riêng
+abort
+friend => A là friend B thì A có thể gọi public friend func của B
+
+-> Use struct:
+struct là cách duy nhất định nghĩa 1 type mới trong move. Dùng struct chỗ khác với <publisher's address>::<module>
+1 struct có 4 tính năng cần xét: copy, store, key, drop
+
+-> Các chức năng như operator, vòng lặp,... đều như các ngôn ngữ khác
+
+-> Use tuples
+Trong lập trình nch, tuple là từ chung để lưu data nhiều kiểu khác nhau 1 cách có thứ tự. Nó kp là 1 kiểu dữ liệu cụ thể, có thể dùng lưu vào biến, truyền vào hàm or là return của hàm, hay làm key cho map, k cần tạo 1 struct riêng
+Vd: my_tuple = (1, "Hello", 3.14); 
+
+Trong Move cũng có tuple nhưng dùng rất hạn chế. Nó coi tuple k exist at runtime. 
+VD move k cho lưu reference vào struct, mà có function cần return multiple reference. Khi đó có thể cho function return tuple chứa multi reference ok
+
+-> Use generic
+Kiểu generic có thể lồng trong kiểu generic khác
+Có thể định nghĩa generic nhiều type nhưng chẳng cần dùng hết các type
+
+-> Use operator as
+
+-> Use loop:
+loop chính là while(true)
+
+-> Quan trọng nhất là cơ chế dùng address:
+Ta chỉ có thể dùng address được định nghĩa trong file config .toml, đó là các address global đã deploy sẵn các module mà ta có thể ref tới dùng luôn
+Khi tham gia vào mạng sẽ có 1 address riêng gán cho ta, ta dùng nó tạo ra các module thì có thể dùng thêm address đó nữa thôi
+
+-> Use function: Trong các nền tảng còn có native funciton được định nghĩa bởi VM và các phiên bản move khác nhau sẽ có định nghĩa khác nhau. Các hàm này k có body và ta có thể ref tới dùng luôn. 
+VD 1 hàm native trong module Signer: native public fun borrow_address(s: &signer): &address;
+
+-> Equality operator
+== and != ss sẽ bỏ qua immutable hay mutable. Nó tự động gọi freeze hết để chuyển về immubtable rồi ss
+
+Vấn đề: 
+Khi ta ss 2 giá trị, tức dùng giá trị ở trong hàm, 2 giá trị đó khi ra khỏi hàm sẽ bị xóa. Tức nếu ta ss 2 struct với nhau thì struct đó phải có drop ability.
+VD lỗi:
+address 0x42 {
+  module example {
+      struct Coin has store { value: u64 }
+      fun invalid(c1: Coin, c2: Coin) {
+        c1 == c2 // ERROR!
+//      ^^    ^^ These resources would be destroyed!
+      }
+  }
+}
+=> Để fix thì trước khi end function, ta cần chuyển ownership và giá trị c1, c2 chỉ được destroyed bởi hàm của chính module đó thôi. 
+Nhưng cách khác là ta có thể borrow nó rồi ss thay vì trực tiếp ss giá trị. Và reference thoát khỏi hàm thoải mái mà k sợ drop ability vì nó là biến cũ chứ kp mới copy tạo ra và thoát khỏi hàm là bị xóa
+=> Người ta khuyên nên luôn dùng ss với reference để tránh tạo ra nhiều expensive copy chỉ để ss và k bị ràng buộc bởi drop ability nữa
+
+-> Expression block
+--> Expression gán bằng trả về 1 tuple rỗng (). Kiểu tuple rỗng cũng có thể là kiểu trả về của 1 function. VD:
+fun x(): () { let x; x = 1 }
+
+--> Expression block có kết quả là value của express cuối cùng. VD: { let x; let y = 1; x = 1; x + y } trả ra kết quả là x + y và có thể gán cho biến. Khi expression đó k có dấu chấm phẩy ở cuối
+Ra khỏi expression block, biến local sẽ bị xóa nên struct local cần có drop ability
+
+VD: { x = x + 1; 1 / x; }  <==> { x = x + 1; 1 / x; () }
+Ta coi kiểu tuple rỗng () chính là kiểu void được
+
+
+
+# Use library
+Với các library dùng trong dự án, phải references đến dependencies của nó trong file config, nếu k sẽ bị lỗi use Unbound library.
+
+Có 2 thư viện standard library cơ bản phải có là:
+MoveNursery và MoveStdlib
+Các hàm sử dụng trong lib đều là native để ta dùng trong module
+
+-> debug: là thư viện giúp in ra màn hình
+vector
+
+Trong các bản khác ta thấy họ dùng kiểu 0x1::Debug là khi account 0x1 trong mạng deploy public module Debug để dùng và set trong file config mới được. Chứ môi trường local ta tải thư viện MoveNursery chạy sẽ dùng theo nó là account std 
+
+-> Khi chỉ import member, thêm Self sẽ giúp nó vừa dùng đươc như cũ, vừa dùng trực tiếp các hàm được import
+
+Dùng as
+
+
+
+# Type and variables
+Primitive types có u8, u128, u64, address, bool
+
+Biến nào k dùng thì thêm prefix _ đằng trước để silence warning
+Có thể khai báo 1 biến nhiều lần
+
+-> u8: uint 8 bit
+
+Nếu k dùng thư viện ngoài, ta có thể biểu diễn string với type vector<u8> vì bản chất string là 1 chuỗi số thôi. Kiểu này nhận 2 loại giá trị là byte string và hex string
+Để dùng byte string: b"Richard" thì b là byte-encoded vector của string, nhận được escape sequence. Ngoài ra còn có: \0  \\  \xHH  \" 
+Còn hexstring prefix là x, vd x"1982A242" => mỗi 2 số là 1 byte trải từ 00 đến FF biểu diễn hex code u8 value
+
+Có thể viết value ngăn cách với _ như: 1_234_5678, 1_000u128, 0xAB_CD_12_35
+Có explicit cast với: (x as u8) hay (4/2 + 12345 as u256)
+
+Tương tự có u16, u32, u64, u128, u256
+Mặc định move thuần chỉ làm việc với số dương. Các framework khác của move có thể có giải pháp làm việc với số âm.
+
+Các hàm: empty, length, push_back, pop_back. Còn có:
+Vector::borrow_mut<E>(v: &mut vector<E>, i: u64): &E; => lấy mutable reference của phần tử thứ i của vector v
+Tương tự có Vector::borrow() là immutable borrow
+
+-> Use constant: Có thể khởi tạo trong cấp độ script hoặc module
+Hằng số phải viết hoa tất cả
+
+-> Ownership and references:
+1 biến nằm trong 1 hàm nào sẽ thuộc về hàm đó (owner scope). Khi biến được move sang hàm khác thì hàm khác là owner của nó, khi đó hàm cũ k còn là owner sẽ k dùng được biến nữa
+1) Mặc định khi truyền biến vào hàm là ta đang move biến vào hàm và đổi owner. VD:
+let a: T = 1;
+M::value(a); // Tương đương M::value(move a);
+M::value(a); // K thể dùng được nữa vì biến a đã bị move sang hàm value
+
+public fun value(a: T): T {
+  a
+} // Ra khỏi đây là biến a bị xóa 
+
+2) Nếu muốn copy giá trị chứ k move thì phải dùng từ khóa copy:
+let a: T = 1;
+M::value(copy a);
+M::value(a); // Dùng được biến a vì function này vẫn là owner của nó 
+
+public fun value(a: T): T {
+  a
+}
+
+3) Dùng references sẽ giúp lấy ref biến gốc mà k chuyển ownership sang hàm khác, tốt hơn copy vì với large object, hàm copy sẽ rất tốn. VD:
+let a: T = 1;
+M::value(&a);
+M::value(&a); // Dùng ok
+
+public fun value(a: &T): &T {
+  a
+}
+
+4) Mặc định khi dùng như thế, giá trị của a pass qua hàm khác sẽ k thể bị thay đổi. Để đảm bảo chặt chẽ rằng dev thực sự muốn biến reference đổi giá trị, họ dùng &mut:
+let a: T = 1;
+M::value(&mut a);
+M::value(&mut a); // Dùng ok
+
+public fun value(a: &mut T): &mut T {
+  a
+}
+=> Các quy tắc áp dụng cho struct. Còn primitive type có ngoại lệ là ta pass by value vẫn sẽ trong owner scope hiện tại thôi, tức mặc định của nó dùng copy. Có thể chủ đích thêm move, & và &mut để có các tính chất trên
+Vì primitive type kích thước nhỏ nên mặc định nó dùng copy cho dễ
+
+-> Khi 1 biến được ref hoặc thuộc tính của nó được ref tới bởi 1 biến khác thì nó gọi là được borrowed. 
+1 biến được borrowed 1 lần trong scope hiện tại. Khi ta tạo ra biến borrow nó lần 2 thì biến borrow cũ bị xóa đi, Nếu ta vẫn cố dùng biến borrow cũ sẽ báo lỗi. 
+
+Dereference => kiểu biến phải có has copy
+Dùng * trước biến sẽ tạo ra copy của biến đó (biến phải có ability copy). Cái bị write vào cũng k thể tự drop nên cần có drop nữa
+Dùng *&<biến>.<field> sẽ tạo ra copy của field đó của biến đó
+
+-> Type signer
+Kiểu native của move chỉ có thuộc tính drop, k thể copy vì k có các thuộc tính copy, key, store. 
+signer k liên quan gì tới signature hay ký gì cả mà chỉ biểu diễn quyền của sender, tức có thể lấy address và truy cập resources của address đó. 
+
+Kiểu signer ta sẽ k tự khai báo trong code mà VM sẽ tự pass nó vào script để ta dùng. Đó là cách duy nhất.
+Tx script có thể có nhiều signer và nó luôn được pass trước các type khác, dùng khi script cần nhiều signer mới thực hiện được. VD:
+fun main(s1: signer, s2: signer, x: u64, y: u8) {}
+
+signer luôn là 1 reference. Dù các thư viện như DiemAccount access vào giá trị của signer nhưng các hàm sử dụng giá trị đó cũng luôn là private và k thể pass giá trị của signer tới nơi khác.
+
+Chú ý lúc trước thì native module toàn viết hoa nhưng giờ toàn viết thường
+
+-> address: đúng là là để biểu diễn vị trí trên global storage như kiểu đánh index ấy
+address dù là 256bit integer nhưng k thể được tạo ra từ int (vẫn có thể convert từ uint256). 
+Ở trong 1 expression, address phải dùng kiểu @<numerical_val> hoặc @<named address>
+Ở ngoài 1 expression, address dùng tương tự nhưng k có @ đằng trước
+
+VD: 
+let a5: address = @std; 
+let a6: address = @66;
+module 66::some_module { }
+
+Giá trị address có thể tương tác với global storage operation như: exists, borrow_global, borrow_global_mut và move_from
+Còn move_to thì k dùng address mà chỉ tương tác với kiểu signer
+=> Chú ý borrow_global_mut có thể dùng chỉ cần địa chỉ tức đổi được giá trị của mọi user. Nhưng vì bên ngoài chỉ tương tác được vói module bởi các hàm gọi trong module nên cần cung hợp lý, k để ai cũng đổi được value của ng khác.
+
+-> Convert Reference:
+URL convert từ reference mutable thành immutable: https://aptos.dev/move/book/references
+K hỗ trợ reference lồng nhau
+
+Hàm freeze(x) với x là &mut sẽ chuyển sang & thường. Thực tế việc convert này được thực hiện tự động implicitly mà k cần gọi hẳn hàm freeze ra.
+
+Reference k thể được lưu trong struct, tức là k thể nằm trong globalstorage luôn (Trong rust thì được lưu). NN là vì mọi value trong move đều phải được serialize để tồn tại trong program execution nhưng reference thì k thể. 
+
+
+
+# Use script
+1 script chỉ chứa 1 function và được coi là main. Function này chính là 1 transaction khi thực hiện nên k thể trả về giá trị. Nó nên gọi các function khác trong các module đã được published.
+
+Để chạy script. VD: move sandbox run ./sources/index.move --args 0x1 => chạy script trong môi trường cách ly để test vì thực tế để chạy cần có 1 chain riêng cơ.
+=> move --help ra đầy lệnh hay
+
+Cơ chế address 
+
+
+
+# Expression and scope
+Expression là 1 cục xử lý và có thể trả ra giá trị
+
+-> Block expression: có thể return value
+Mọi expression phải kết thúc bằng ;
+1 expression không kết thúc bằng ; thì đó là expression return value
+
+-> Local Variables
+Local var được định nghĩa bằng từ khóa let. Có thể gán giá trị trực tiếp hoặc thông qua mutable reference.
+K được start bằng uppercase. Phải gán giá trị trước khi sử dụng. 
+
+--> Destructuring against reference
+
+--> Khi shadow biến struct, biến struct cũng phải có drop ability.
+Shadow xảy ra khi khai báo 2 lần cùng 1 biến với let, thì biến cũ sẽ bị xóa bỏ
+
+Shadow trong 1 blockscope thì khác, nó như tạo 1 biến mới trong block và ra ngoài block lại dùng được biến cũ
+
+--> copy và move
+Local var luôn được copy hoặc move mỗi khi sử dụng. Compiler tự động chèn vào implicitly.
+VD: let x = 0;
+let y = copy x + 1;
+let z = copy x + 2;
+
+Ngược lại nếu ta tự ý dùng move. Thì move sẽ lấy giá trị khỏi local var và ta k thể dùng local var đó nữa. Để dùng ta phải gán tiếp reference vào biến khác. VD:
+let x = 1;
+let y = move x + 1;
+let z = move x + 2; // Error! vì giá trị của x đã k còn lưu trong biến x
+
+Việc chọn move hay copy là do compiler tự quyết với quy tắc đơn giản: mặc định scalar có copy và mọi loại reference sẽ đều dùng copy; Còn lại các TH đều là move
+
+let s = b"hello";
+let foo = Foo { f: 0 };
+let coin = Coin { value: 0 };
+let s2 = s; // move vì k là scalar
+let foo2 = foo; // move vì k là scalar
+let coin2 = coin; // move vì k là scalar
+
+let x = 0;
+let x_ref = &x;
+let coin_ref = &mut coin2;
+let x2 = x; // copy vì là scalar
+let x_ref2 = x_ref; // copy
+let coin_ref2 = coin_ref; // copy vì mọi reference đều tự dùng copy
+
+
+
+# Import thư viện move bên ngoài
+VD: MoveNursery = { git = "https://github.com/diem/move.git", subdir = "language/move-stdlib/nursery", rev = "main" }
+Mỗi khi chạy nó sẽ fetch thư viện về. 
+MoveNursery là tên package trên git, url, subdir là thư mục lấy lib, rev main là tên nhánh
+
+Các thư viện có liên quan đến nhau phải cùng chung git url
+Address được định nghĩa rõ trong file Move.toml trên git và ta lấy ra dùng
+
+Hiện tại có 2 lib basic nhất là https://github.com/diem/move.git và https://github.com/move-language/move.git y hệt nhau
+
+
+
+# Use Resources
+Resources là 1 giá trị bình thường có thể pass vào hàm, return ra hay lưu như 1 cấu trúc dữ liệu bth. Trước nó là 1 kiểu riêng, nhưng vì mở rộng ra nhiều tính năng nên nó dần trở nên abstract hơn.
+
+Move cung các cơ chế đảm bảo an toàn cho resources. Resources k thể duplicate, reuse, discard nhưng vẫn có thể lưu và transfer giữa các accounts. Nó chỉ có thể được tạo và hủy bởi chính module định nghĩa nó. Để làm được điều này, Move VM sẽ chỉ chạy code sau khi được pass qua bytecode verifier. Do đó resources là kiểu lý tưởng để lưu digital assets
+Tức Resources chỉ có key và store ability. Key giúp nó lưu ở top level của storage và store giúp nó lưu trữ được theo top-level key đó => nên nhớ primitive type mặc định cũng có store ability nên ta mới lưu được nhưng nó k có key ability nên k thể lưu ở top level container.
+
+Mọi currencies trong Diem đều được implement dùng generic type Diem::T
+VD: Diem::T<USD::T> hay Diem::T<LBR::T>
+
+- Resoures được lưu trong account nên chỉ tồn tại khi được assigned to account và chỉ access bởi account đó. 
+- Account chỉ có thể lưu 1 resouces của 1 type cụ thể và resouces này phải có key ability.
+- Giá trị của resouces phải được sử dụng. Cụ thể là khi resouces mới được tạo hoặc lấy từ 1 account, nó k thể dropped nên phải được stored hoặc destructured (vì nếu k thì khi hàm kết thúc sẽ tự bị drop là sai ability). Ta có thể destructured nó và các thành phần bên trong bị drop là hủy được resources
+
+-> Create my own Collection resouces
+Khi dùng resources nên chơi kiểu tên module trùng tên với main resources và khi truy cập tới resouces sẽ dùng kiểu VD Collection::Collection thì sẽ dễ dùng hơn về sau
+
+Hàm move_to có sẵn của signer giúp move 1 resouces vào 1 account nào (1 trong 5 global storage operation của move)
+- Ta chỉ có thể move resouces vào account của ta vì ta k thể access vào signer của người khác. 
+- K thể gọi hàm 2 lần trên public chain vì 1 account k thể lưu 1 resouces cùng type. Thực hiện lần thứ 2 sẽ xóa toàn bộ resouces cũ và thay vào resouces mới, điều này là k nên xảy ra. Thử tưởng tượng ta có coins xong xóa nhầm đi và set lại empty balance chẳng hạn.
+
+--> borrow_global trả về 1 immutable reference tới resources nào của 1 address. Tức hàm này có thể đọc bất cứ resouces của 1 address nào vì truyền vào kiểu address chứ kp kiểu signer.
+Sau khi lấy được resources ta k thể dereference content của nó với * vì nó resouces k có copy ability
+Khi sử dụng hàm borrow, ta k thể return reference tới resouces hoặc content của nó vì khi scope end, reference tới resouces sẽ mất => Nên nhớ dù 1 kiểu k có drop ability và luôn tồn tại mãi, nhưng ta có thể tạo ra reference tới nó để lấy giá trị và khi kết thúc scope, reference mất (chứ bản thân resouces k mất).
+
+Dùng borrow_global_mut để lấy mutable reference tới resouces nào của 1 address. Khi đó ta có thể thêm data vào thoải mái
+Ta nghĩ nó vẫn thỏa mãn 1 người k thể thay đổi resouces của 1 address bất kỳ mà chỉ thay đổi của chính họ thôi. 
+
+move_from sẽ lấy resouces khỏi account để destroy content bên trong, từ đó destroy resouces
+
+--> Keyword accquires được đặt sau return type của 1 function để xđ những resouces được accquired bởi function đó. 
+Kể cả nested function accquired resouces thì function cũng phải khai báo accquires đầy đủ
+
+
+
+## Move Aptos
+
+
