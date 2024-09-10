@@ -1,0 +1,17 @@
+Dựng 1 server lắng nghe sự kiện từ web3 mà không dùng TheGraph. Điều này là hoàn toàn có thể.
+Ta chỉ cần dùng web3 library để lắng nghe sự kiện liên tục. Nhưng như ta đã biết thì các ứng dụng tự chế như này rất dễ sập k rõ nguyên nhân, khi đó ta có thể dựng contract sockket. VD ta bắt sự kiện on error và on disconnect thì lại gọi connect lại là được, bắt được sự kiện thì lưu vào database là xong.
+
+
+
+ERC4337: Account abstraction biến ví thành smart contract wallet. Smart wallet có thể tối ưu gas, có khả năng khôi phục khi bị mất.
+
+
+
+# Merkle Airdrop
+Airdrop là 1 contract riêng mà ngừoi dùng tương tác để claim token về. Nếu nó lưu mảng những ngừoi được airdrop thì phí gas quá lớn. 
+Giải pháp là xây merkle tree cho list người cần airdrop và contract chỉ cần lưu merkle root để check thôi
+User muốn claim chỉ cần gọi tới server, server sẽ gửi lại proof cho address của họ và gọi tới contract để claim về thôi.
+URL: https://viblo.asia/p/merkle-airdrop-giai-phap-airdrop-cho-cac-dot-phat-hanh-token-vyDZO3EOZwj
+
+
+

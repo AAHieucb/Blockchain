@@ -14,6 +14,7 @@ Chuỗi chéo giúp cho các doanh nghiệp giao dịch với khách hàng của
 -> Các dạng giao tiếp giữa các blockchain đã có:
 Sàn CEX: các sàn CEX thực chất chính là giao tiếp xuyên chuỗi vì nó tập hợp rất nh coin và token của các blockchain khác nhau như Bitcoin, Ethereum, Solana, Near, Binance Smart Chain,.. Cơ chế như bên trên và vc giao tiếp giữa các chain chỉ dừng lại ở vc mua bán các đồng coin.
 Bridge: Các dự án Bridge VD có thể đem BTC lên nên tảng Ethereum với WBTC hay Wrapped Bitcoin chuẩn hóa Bitcoin thành token ERC20 tỉ lệ 1:1 như cái WETH trong Uniswap.
+deBridge SDK giúp dev tích hợp các dịch vụ của deBridge vào các ứng dụng blockchain, bao gồm cả giao thức cross-chain giúp chuyển tài sản giữa các blockchain khác nhau.
 
 -> Các dự an Crosschain nổi bật: 
 POLKADOT: cho phép gửi bất kỳ loại dữ liệu nào giữa bất kỳ blockchain nào. Bên trong Polkadot có các mạng lưới blockchain k đồng nhất gọi là parachains và parahead. Parachains là các blockchain độc quyền được tối ưu hóa cho các TH cụ thể, parahead tương tự như parachains nhưng là các blockchain có mô hình trả tiền khi sử dụng để tiết kiệm cho các blockchain k cần kết nối liên tục với mạng. Bên trong Polkadot có relaychain là chuỗi chuyển tiếp, nó là trung tâm của Polkadot chịu trách nhiệm bảo mật, đồng thuận và khả năng tương tác crosschain. Bên trong nó còn có Bridge cho phép các parachains và paraheads kết nối và giao tiếp với các mạng bên ngoài như Bitcoin, ethereum.
